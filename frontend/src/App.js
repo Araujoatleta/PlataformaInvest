@@ -1,85 +1,74 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import Login from "./components/Login";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import CompanyFilter from "./components/CompanyFilter";
 import InvestmentCalculator from "./components/InvestmentCalculator";
-import MainLayout from "./components/MainLayout";
 import AddFii from "./components/AddFii";
+import Login from "./components/Login";
+import { ToastContainer } from "react-toastify";
 
-const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
+  // Verificar se o token existe e manter a autenticação
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      setIsLoggedIn(true);
+      setIsAuthenticated(true);
+      // Não redirecionar diretamente para o Dashboard, pois já estamos na página
+    } else {
+      navigate("/login");
     }
-  }, []);
+  }, [navigate]);
 
-  const handleLogin = (userToken) => {
-    localStorage.setItem("token", userToken);
-    setIsLoggedIn(true);
+  // Função para login, setando o estado de autenticação
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem("token", "your_token_value"); // Simulando token no localStorage
+    navigate("/dashboard"); // Redireciona para a Dashboard após login
   };
 
+  // Função de logout
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
+    setIsAuthenticated(false);
+    localStorage.removeItem("token"); // Removendo o token do localStorage
+    navigate("/login");
   };
 
   return (
-    <Router>
+    <>
+      {/* Exibe o Sidebar somente se o usuário estiver autenticado */}
+      {isAuthenticated && <Sidebar onLogout={handleLogout} />}
+
       <Routes>
-        {!isLoggedIn ? (
-          <Route path="*" element={<Login onLogin={handleLogin} />} />
-        ) : (
-          <>
-            <Route
-              path="/"
-              element={
-                <MainLayout onLogout={handleLogout}>
-                  <Dashboard />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <MainLayout onLogout={handleLogout}>
-                  <Dashboard />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/company-filter"
-              element={
-                <MainLayout onLogout={handleLogout}>
-                  <CompanyFilter />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/add-fii"
-              element={
-                <MainLayout onLogout={handleLogout}>
-                  <AddFii />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/investment-calculator"
-              element={
-                <MainLayout onLogout={handleLogout}>
-                  <InvestmentCalculator />
-                </MainLayout>
-              }
-            />
-            <Route path="*" element={<Navigate to="/dashboard" />} />
-          </>
-        )}
+        <Route
+          path="/"
+          element={isAuthenticated ? <Dashboard /> : <Login onLogin={handleLogin} />}
+        />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route
+          path="/dashboard"
+          element={isAuthenticated ? <Dashboard /> : <Login onLogin={handleLogin} />}
+        />
+        <Route
+          path="/company-filter"
+          element={isAuthenticated ? <CompanyFilter /> : <Login onLogin={handleLogin} />}
+        />
+        <Route
+          path="/investment-calculator"
+          element={isAuthenticated ? <InvestmentCalculator /> : <Login onLogin={handleLogin} />}
+        />
+        <Route
+          path="/add-fii"
+          element={isAuthenticated ? <AddFii /> : <Login onLogin={handleLogin} />}
+        />
       </Routes>
-    </Router>
+
+      <ToastContainer />
+    </>
   );
-};
+}
 
 export default App;

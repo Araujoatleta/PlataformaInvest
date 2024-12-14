@@ -1,64 +1,75 @@
 import React, { useState } from "react";
-import { Drawer, List, ListItem, ListItemText, Button } from "@mui/material";
-import { Menu as MenuIcon, Dashboard as DashboardIcon, FilterAlt as FilterAltIcon, AddCircle as AddCircleIcon, Calculate as CalculateIcon } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import CalculateIcon from "@mui/icons-material/Calculate";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import { Link } from "react-router-dom";
 
 const Sidebar = ({ onLogout }) => {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    onLogout();
-    navigate("/"); // Redireciona para a tela de login
+  const toggleDrawer = () => {
+    setOpen((prevOpen) => !prevOpen); // Alterna o estado do Drawer de forma segura
   };
 
-  const toggleMenu = () => {
-    setOpen(!open);
+  // Função para fechar o Drawer
+  const closeDrawer = () => {
+    setOpen(false);
   };
 
   return (
-    <div className={`sidebar-container ${open ? 'open' : 'closed'}`}>
-      <div className="menu-icon" onClick={toggleMenu}>
-        <MenuIcon />
-      </div>
-      <Drawer
-        variant="permanent"
-        open={open}
-        sx={{
-          width: 240,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: 240,
-            boxSizing: "border-box",
-            background: "linear-gradient(180deg, #121212, #333333)", // Gradiente
-          },
-        }}
-      >
+    <>
+      <IconButton onClick={toggleDrawer} sx={{ color: "#ffffff", backgroundColor: "#1c1c1c", margin: "1rem", "&:hover": { backgroundColor: "#3a3a3a" } }}>
+        <MenuIcon fontSize="large" />
+      </IconButton>
+
+      <Drawer anchor="left" open={open} onClose={toggleDrawer} sx={{ "& .MuiDrawer-paper": { background: "linear-gradient(180deg, #0d0d0d, #1c1c1c, #3a3a3a)", color: "white", width: 250, border: "none" } }}>
         <List>
-          <ListItem button onClick={() => navigate("/dashboard")}>
-            <DashboardIcon />
-            <ListItemText primary="Dashboard" />
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/dashboard" onClick={closeDrawer}>
+              <ListItemIcon>
+                <DashboardIcon sx={{ color: "white" }} />
+              </ListItemIcon>
+              <ListItemText primary="Dashboard" />
+            </ListItemButton>
           </ListItem>
-          <ListItem button onClick={() => navigate("/company-filter")}>
-            <FilterAltIcon />
-            <ListItemText primary="Filtros FIIs" />
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/company-filter" onClick={closeDrawer}>
+              <ListItemIcon>
+                <FilterAltIcon sx={{ color: "white" }} />
+              </ListItemIcon>
+              <ListItemText primary="Filtros FIIs" />
+            </ListItemButton>
           </ListItem>
-          <ListItem button onClick={() => navigate("/add-fii")}>
-            <AddCircleIcon />
-            <ListItemText primary="Adicionar FII" />
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/investment-calculator" onClick={closeDrawer}>
+              <ListItemIcon>
+                <CalculateIcon sx={{ color: "white" }} />
+              </ListItemIcon>
+              <ListItemText primary="Calculadora" />
+            </ListItemButton>
           </ListItem>
-          <ListItem button onClick={() => navigate("/investment-calculator")}>
-            <CalculateIcon />
-            <ListItemText primary="Calculadora de Investimento" />
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/add-fii" onClick={closeDrawer}>
+              <ListItemIcon>
+                <AddCircleIcon sx={{ color: "white" }} />
+              </ListItemIcon>
+              <ListItemText primary="Adicionar FII" />
+            </ListItemButton>
           </ListItem>
-          <ListItem>
-            <Button variant="outlined" color="error" fullWidth onClick={handleLogout}>
-              Logout
-            </Button>
+          <ListItem disablePadding>
+            <ListItemButton onClick={onLogout}>
+              <ListItemIcon>
+                <DashboardIcon sx={{ color: "white" }} />
+              </ListItemIcon>
+              <ListItemText primary="Sair" />
+            </ListItemButton>
           </ListItem>
         </List>
       </Drawer>
-    </div>
+    </>
   );
 };
 
