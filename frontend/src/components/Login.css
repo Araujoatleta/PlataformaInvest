@@ -1,15 +1,20 @@
-/* Fundo com gradiente animado */
 .login-background {
-  background: linear-gradient(-45deg, #1e3c72, #2a5298, #0d1b2a, #4b6cb7);
+  background: linear-gradient(45deg, #000000, #333333, #777777, #bcbcbc, #ffffff);
   background-size: 400% 400%;
-  animation: gradientBG 10s ease infinite;
+  animation: gradientAnimation 10s ease infinite;
   height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
-@keyframes gradientBG {
+@keyframes gradientAnimation {
   0% {
     background-position: 0% 50%;
   }
@@ -20,7 +25,6 @@
     background-position: 0% 50%;
   }
 }
-
 /* Animações suaves */
 .MuiTextField-root {
   transition: all 0.3s ease;
