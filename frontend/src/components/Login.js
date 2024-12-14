@@ -1,5 +1,17 @@
 import React, { useState } from "react";
-import './Login.css'; // Certifique-se de que você tenha o estilo certo
+import { TextField, Button, Card, CardContent, Typography, Box } from "@mui/material";
+import { styled } from "@mui/system";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { motion } from "framer-motion";
+import './Login.css';
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  maxWidth: 400,
+  margin: "auto",
+  padding: theme.spacing(2),
+  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.3)",
+  borderRadius: "12px",
+}));
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState("");
@@ -7,51 +19,80 @@ const Login = ({ onLogin }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
-    const response = await fetch('http://localhost:5000/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username,
-        password
-      }),
+    const response = await fetch("http://localhost:5000/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
     });
 
     const data = await response.json();
 
     if (response.ok) {
-      // Armazenando token no localStorage
-      localStorage.setItem('token', data.token);
-      onLogin(); // Chama a função do pai para indicar que o login foi bem-sucedido
+      localStorage.setItem("token", data.token);
+      onLogin();
     } else {
       alert(data.message || "Erro desconhecido");
     }
   };
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <div className="input-container">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
-        <div className="input-container">
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
+    <div className="login-background">
+      {/* Animação de entrada do Card */}
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+      >
+        <StyledCard>
+          <CardContent>
+            {/* Ícone animado */}
+            <Box display="flex" justifyContent="center" mb={2}>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 100 }}
+              >
+                <LockOutlinedIcon fontSize="large" color="primary" />
+              </motion.div>
+            </Box>
+
+            <Typography variant="h5" align="center" gutterBottom>
+              Bem-vindo
+            </Typography>
+            <form onSubmit={handleLogin}>
+              <Box mb={2}>
+                <TextField
+                  fullWidth
+                  label="Username"
+                  variant="outlined"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </Box>
+              <Box mb={2}>
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  variant="outlined"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </Box>
+              <Box display="flex" justifyContent="center" mt={2}>
+                {/* Botão animado */}
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="contained" color="primary" size="large" type="submit" fullWidth>
+                    Entrar
+                  </Button>
+                </motion.div>
+              </Box>
+            </form>
+          </CardContent>
+        </StyledCard>
+      </motion.div>
     </div>
   );
 };
