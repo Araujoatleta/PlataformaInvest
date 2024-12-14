@@ -1,0 +1,95 @@
+/* Sidebar container */
+.sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    z-index: 10;
+    background: linear-gradient(180deg, #121212, #333333); /* Gradiente de preto e cinza escuro */
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.6); /* Sombra sutil para o menu */
+    border-right: 1px solid rgba(255, 255, 255, 0.1); /* Linha de borda fina */
+    transition: transform 0.3s ease; /* Transição suave para o menu */
+    padding-top: 20px;
+    overflow: hidden;
+    background-color: #121212; /* Cor de fundo inicial */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  /* Menu aberto com animação */
+  .sidebar-container.open {
+    transform: translateX(0); /* Deixa o menu visível quando ele é aberto */
+  }
+  
+  /* Opções do menu */
+  .sidebar-container .MuiListItem-root {
+    padding: 15px;
+    color: white;
+    font-size: 18px;
+    background-color: #121212; /* Fundo inicial preto */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Separadores sutis */
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Efeito de hover nas opções de navegação */
+  .sidebar-container .MuiListItem-root:hover {
+    background-color: #444444; /* Fundo mais claro ao passar o mouse */
+  }
+  
+  /* Estilo do ícone do menu */
+  .menu-icon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 15;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2); /* Ícone com fundo suave */
+    transition: transform 0.3s ease;
+  }
+  
+  /* Ajuste das cores do ícone */
+  .sidebar-container .MuiSvgIcon-root {
+    color: white; /* Ícones brancos */
+    font-size: 24px;
+    margin-right: 15px;
+  }
+  
+  /* Estilo do texto nas opções */
+  .sidebar-container .MuiListItemText-primary {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  /* Animando os itens do menu */
+  .sidebar-container .MuiListItem-root {
+    opacity: 0;
+    transform: translateX(-100%);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  
+  .sidebar-container.open .MuiListItem-root {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  /* Menu fechando */
+  .sidebar-container.closed {
+    transform: translateX(-240px); /* Oculta o menu */
+    background: transparent; /* Remove o fundo */
+  }
+  
+  /* Ajuste do conteúdo da página quando o menu está aberto */
+  body {
+    transition: margin-left 0.3s ease;
+  }
+  
+  body.menu-open {
+    margin-left: 240px; /* Deixa espaço para o menu */
+  }
