@@ -1,22 +1,22 @@
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const axios = require('axios');
 const yahooFinance = require('yahoo-finance2').default;
 
 const app = express();
 
-// Configuração do banco de dados SQLite
-const db = new sqlite3.Database('./fiis.db', (err) => {
+app.use(cors());
+app.use(express.json());
+
+// Configuração do banco de dados SQLite com timeout
+const db = new sqlite3.Database('./fiis.db', sqlite3.OPEN_READWRITE, (err) => {
   if (err) {
     console.error('Erro ao conectar ao banco de dados:', err.message);
   } else {
     console.log('Conectado ao banco de dados SQLite.');
+    db.run("PRAGMA busy_timeout = 10000"); // Timeout de 10 segundos
   }
 });
-
-app.use(cors());
-app.use(express.json());
 
 // Lista dos FIIs da B3
 const fiiCodes = [
@@ -121,84 +121,109 @@ const fiiCodes = [
   'XPSF11.SA', 'XTED11.SA', 'YCHY11.SA', 'YUFI11.SA','ZAGH11.SA', 
   'ZAVC11.SA', 'ZAVI11.SA', 'ZIFI11.SA'
 ];
+// Criação da tabela com os novos campos
+db.run(`
+  CREATE TABLE IF NOT EXISTS fiis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT,
+    cotacao REAL,
+    dividendRate REAL,
+    sharesOutstanding INTEGER,
+    marketCap REAL,
+    avgVolume10d INTEGER
+  )
+`);
 
-// Função para buscar dados de cada FII
+// Função para buscar dados de um FII
 async function fetchFiiData(symbol) {
   try {
     const data = await yahooFinance.quote(symbol);
-    console.log('Dados retornados para', symbol, data); // Verifique a resposta completa aqui
 
-    // Verifique se o campo regularMarketPrice está disponível ou use outro campo
-    if (data && data.regularMarketPrice !== undefined) {
-      return {
-        nome: symbol,
-        pvp: 1.05,  // P/VP fictício
-        liquidez: 10000,  // Exemplo de liquidez
-        qtd_imoveis: 10,  // Exemplo de imóveis
-        vacancia_media: 2.5,  // Exemplo de vacância
-        cotacao: data.regularMarketPrice // Cotação real do FII
-      };
-    } else if (data && data.previousClose) {
-      console.log('Usando previousClose como cotação', symbol);
-      return {
-        nome: symbol,
-        pvp: 1.05,
-        liquidez: 10000,
-        qtd_imoveis: 10,
-        vacancia_media: 2.5,
-        cotacao: data.previousClose // Usando previousClose se regularMarketPrice não estiver disponível
-      };
-    } else {
-      console.error('Dados de cotação não encontrados para', symbol);
-      return null; // Retorna null se os dados não forem encontrados
+    if (!data || !data.regularMarketPrice) {
+      console.warn(`Dados incompletos ou ausentes para ${symbol}`);
+      return null;
     }
+
+    return {
+      nome: symbol.replace('.SA', ''), // Exibindo o ticker (MXRF11, VISC11, etc)
+      cotacao: data.regularMarketPrice || 0,
+      dividendRate: data.trailingAnnualDividendRate || 0,
+      sharesOutstanding: data.sharesOutstanding || 0,
+      marketCap: data.marketCap || 0,
+      avgVolume10d: data.averageDailyVolume10Day || 0
+    };
   } catch (error) {
-    console.error('Erro ao buscar dados do FII:', error);
+    console.error(`Erro ao buscar dados do FII ${symbol}:`, error.message);
     return null;
   }
 }
 
-// Rota para buscar todos os FIIs e atualizar no banco de dados
+// Rota: Buscar e atualizar todos os FIIs no banco de dados
 app.get('/api/fiis/fetch', async (req, res) => {
-  try {
-    // Limpar os dados existentes
-    db.run(`DELETE FROM fiis`, (err) => {
-      if (err) {
-        console.error('Erro ao limpar a tabela de FIIs:', err.message);
-        return res.status(500).json({ message: 'Erro ao limpar a tabela de FIIs' });
-      }
+  console.log('Iniciando atualização dos FIIs...');
 
-      // Buscar dados de cada FII
-      fiiCodes.forEach(async (fiiCode) => {
-        const fiiData = await fetchFiiData(fiiCode);
-        if (fiiData) {
-          const query = `
-            INSERT INTO fiis (nome, pvp, liquidez, qtd_imoveis, vacancia_media, cotacao)
-            VALUES (?, ?, ?, ?, ?, ?)
-          `;
-          db.run(query, [fiiData.nome, fiiData.pvp, fiiData.liquidez, fiiData.qtd_imoveis, fiiData.vacancia_media, fiiData.cotacao], function (err) {
-            if (err) {
-              console.error('Erro ao adicionar ou atualizar FII:', err.message);
-              return res.status(500).json({ message: 'Erro ao adicionar ou atualizar FII' });
-            }
-          });
-        }
+  db.serialize(async () => {
+    try {
+      // Iniciar transação
+      db.run("BEGIN TRANSACTION");
+
+      // Limpar a tabela existente
+      await new Promise((resolve, reject) => {
+        db.run(`DELETE FROM fiis`, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
 
+      // Buscar e inserir os dados de cada FII
+      for (const fiiCode of fiiCodes) {
+        const fiiData = await fetchFiiData(fiiCode);
+
+        if (fiiData) {
+          const query = `
+            INSERT INTO fiis (nome, cotacao, dividendRate, sharesOutstanding, marketCap, avgVolume10d)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `;
+
+          await new Promise((resolve, reject) => {
+            db.run(
+              query,
+              [
+                fiiData.nome,
+                fiiData.cotacao,
+                fiiData.dividendRate,
+                fiiData.sharesOutstanding,
+                fiiData.marketCap,
+                fiiData.avgVolume10d
+              ],
+              (err) => {
+                if (err) reject(err);
+                else resolve();
+              }
+            );
+          });
+          console.log(`FII ${fiiData.nome} atualizado com sucesso.`);
+        }
+      }
+
+      // Finalizar transação
+      db.run("COMMIT");
+      console.log('Atualização dos FIIs concluída.');
       res.status(200).json({ message: 'FIIs atualizados com sucesso!' });
-    });
-  } catch (error) {
-    console.error('Erro ao buscar FIIs da API externa:', error.message);
-    res.status(500).json({ message: 'Erro ao buscar FIIs.' });
-  }
+    } catch (error) {
+      console.error('Erro ao atualizar os FIIs:', error.message);
+      db.run("ROLLBACK");
+      res.status(500).json({ message: 'Erro ao buscar e atualizar os FIIs.' });
+    }
+  });
 });
 
-// Rota para listar todos os FIIs
+// Rota: Listar todos os FIIs do banco de dados
 app.get('/api/fiis', (req, res) => {
   db.all(`SELECT * FROM fiis`, [], (err, rows) => {
     if (err) {
       console.error('Erro ao listar FIIs:', err.message);
-      return res.status(500).json({ message: 'Erro ao buscar os FIIs' });
+      return res.status(500).json({ message: 'Erro ao buscar os FIIs.' });
     }
     res.status(200).json(rows);
   });

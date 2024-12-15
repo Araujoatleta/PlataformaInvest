@@ -37,15 +37,14 @@ const db = new sqlite3.Database('./fiis.db', (err) => {
 // Criação da tabela FIIs, se não existir
 db.run(`
   CREATE TABLE IF NOT EXISTS fiis (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    pvp REAL,
-    liquidez REAL,
-    qtd_imoveis INTEGER,
-    vacancia_media REAL,
-    cotacao REAL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT,
+  dividendRate REAL,
+  sharesOutstanding INTEGER,
+  marketCap REAL,
+  cotacao REAL,
+  avgVolume10d INTEGER
+);
 `);
 
 // Função para buscar os FIIs de uma API externa
