@@ -15,7 +15,9 @@
     "@mui/icons-material": "^6.2.0",
     "@mui/material": "^6.2.0",
     "axios": "^1.7.9",
+    "express": "^4.21.2",
     "motion-utils": "^11.14.3",
+    "node-cron": "^3.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.28.0",
@@ -23,8 +25,10 @@
     "react-toastify": "^10.0.6",
     "react-transition-group": "^4.4.5",
     "recharts": "^2.15.0",
+    "sqlite3": "^5.1.7",
     "webpack": "^5.97.1",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "yahoo-finance2": "^2.13.2"
   },
   "author": "",
   "license": "ISC",
