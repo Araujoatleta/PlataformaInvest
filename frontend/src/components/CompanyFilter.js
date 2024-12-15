@@ -9,117 +9,193 @@ import {
   TableRow,
   Paper,
   TextField,
-  Typography,
+  Button,
+  MenuItem,
+  Select,
+  Grid,
   Box,
+  Typography,
 } from "@mui/material";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { styled } from "@mui/system";
 
-const CompanyFilter = () => {
-  const [fiis, setFiis] = useState([]); // Lista de FIIs
-  const [search, setSearch] = useState(""); // Barra de pesquisa
-  const [error, setError] = useState(""); // Armazena erro da API
+// Estilo global inspirado no Netflix
+const RootContainer = styled(Box)({
+  minHeight: "100vh",
+  margin: 0,
+  padding: 0,
+  backgroundColor: "#141414", // Cor do background da Netflix
+  color: "#fff",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "flex-start",
+  gap: "1rem",
+});
 
-  // Dados mockados como fallback
+// Título estilizado
+const Title = styled(Typography)({
+  fontSize: "2rem",
+  fontWeight: "bold",
+  marginTop: "1rem",
+  color: "#E50914", // Vermelho Netflix
+});
+
+// Container dos Filtros
+const FiltersContainer = styled(Box)({
+  display: "flex",
+  justifyContent: "center",
+  gap: "1rem",
+  flexWrap: "wrap",
+  marginBottom: "1rem",
+  width: "100%",
+  padding: "0 1rem",
+});
+
+// Campos de filtro
+const FilterField = styled(TextField)({
+  backgroundColor: "#333333",
+  borderRadius: "4px",
+  input: { color: "#fff" },
+  "& .MuiOutlinedInput-root": {
+    "& fieldset": { borderColor: "#555" },
+    "&:hover fieldset": { borderColor: "#E50914" },
+    "&.Mui-focused fieldset": { borderColor: "#E50914" },
+  },
+});
+
+// Botão de busca
+const StyledButton = styled(Button)({
+  backgroundColor: "#E50914",
+  color: "#fff",
+  "&:hover": {
+    backgroundColor: "#B20710",
+  },
+  textTransform: "none",
+  fontSize: "1rem",
+});
+
+// Tabela
+const StyledTableContainer = styled(TableContainer)({
+  backgroundColor: "#1F1F1F",
+  width: "90%",
+  borderRadius: "8px",
+});
+
+const StyledTableCell = styled(TableCell)({
+  color: "#fff",
+  fontWeight: "bold",
+  borderBottom: "1px solid #333",
+});
+
+const StyledTableRow = styled(TableRow)({
+  "&:nth-of-type(odd)": {
+    backgroundColor: "#333333",
+  },
+});
+
+const NetflixStyledApp = () => {
+  const [fiis, setFiis] = useState([]);
+  const [filteredFiis, setFilteredFiis] = useState([]);
+  const [search, setSearch] = useState("");
+  const [pvpMin, setPvpMin] = useState("");
+  const [pvpMax, setPvpMax] = useState("");
+  const [segmento, setSegmento] = useState("");
+
   const mockFiis = [
-    { nome: "MXRF11", pvp: 0.95, liquidez: 15000, qtd_imoveis: 12, vacancia_media: 3.2, cotacao: 10.5 },
-    { nome: "HGLG11", pvp: 1.05, liquidez: 12000, qtd_imoveis: 20, vacancia_media: 1.8, cotacao: 150.0 },
+    { nome: "MXRF11", pvp: 0.95, liquidez: 15000, segmento: "Papel CRI" },
+    { nome: "HGLG11", pvp: 1.05, liquidez: 12000, segmento: "Logística" },
   ];
 
-  // Busca os dados da API
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get("http://localhost:5000/api/fiis");
-        if (!response.data || !Array.isArray(response.data)) {
-          throw new Error("Formato inválido da API.");
-        }
-        setFiis(response.data);
-        setError("");
-      } catch (err) {
-        console.error("Erro na API:", err.message);
-        setError("Dados inválidos retornados da API. Usando dados padrões.");
-        setFiis(mockFiis); // Dados mockados
+        setFiis(response.data || mockFiis);
+      } catch {
+        setFiis(mockFiis);
       }
     };
     fetchData();
   }, []);
 
-  // Filtra FIIs
-  const filteredFiis = fiis.filter((fii) =>
-    fii.nome.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleFilter = () => {
+    let result = fiis;
+    if (search) result = result.filter((fii) => fii.nome.toLowerCase().includes(search.toLowerCase()));
+    if (pvpMin) result = result.filter((fii) => fii.pvp >= parseFloat(pvpMin));
+    if (pvpMax) result = result.filter((fii) => fii.pvp <= parseFloat(pvpMax));
+    if (segmento) result = result.filter((fii) => fii.segmento === segmento);
+    setFilteredFiis(result);
+  };
 
   return (
-    <Box sx={{ padding: "2rem" }}>
-      <Typography variant="h4" gutterBottom>
-        Filtro de FIIs
-      </Typography>
+    <RootContainer>
+      <Title>Filter About the Best FIIs</Title>
 
-      {/* Mostra erro, se houver */}
-      {error && <Typography color="error">{error}</Typography>}
-
-      {/* Barra de pesquisa */}
-      <TextField
-        label="Pesquisar FIIs..."
-        variant="outlined"
-        fullWidth
-        margin="normal"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      {/* Filtros */}
+      <FiltersContainer>
+        <FilterField
+          variant="outlined"
+          label="Nome do FII"
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <FilterField
+          variant="outlined"
+          label="P/VP Min"
+          onChange={(e) => setPvpMin(e.target.value)}
+        />
+        <FilterField
+          variant="outlined"
+          label="P/VP Max"
+          onChange={(e) => setPvpMax(e.target.value)}
+        />
+        <Select
+          value={segmento}
+          displayEmpty
+          onChange={(e) => setSegmento(e.target.value)}
+          style={{ backgroundColor: "#333", color: "#fff", width: "12rem" }}
+        >
+          <MenuItem value="">
+            <em style={{ color: "#888" }}>Segmento</em>
+          </MenuItem>
+          <MenuItem value="Papel CRI">Papel CRI</MenuItem>
+          <MenuItem value="Logística">Logística</MenuItem>
+        </Select>
+        <StyledButton onClick={handleFilter}>Buscar</StyledButton>
+      </FiltersContainer>
 
       {/* Tabela */}
-      <TableContainer component={Paper} sx={{ marginTop: "1rem" }}>
+      <StyledTableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><b>Nome</b></TableCell>
-              <TableCell><b>P/VP</b></TableCell>
-              <TableCell><b>Liquidez</b></TableCell>
-              <TableCell><b>Qtd de Imóveis</b></TableCell>
-              <TableCell><b>Vacância Média</b></TableCell>
-              <TableCell><b>Cotação</b></TableCell>
+              <StyledTableCell>Nome</StyledTableCell>
+              <StyledTableCell>P/VP</StyledTableCell>
+              <StyledTableCell>Liquidez</StyledTableCell>
+              <StyledTableCell>Segmento</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredFiis.length > 0 ? (
               filteredFiis.map((fii, index) => (
-                <TableRow key={index}>
+                <StyledTableRow key={index}>
                   <TableCell>{fii.nome}</TableCell>
                   <TableCell>{fii.pvp}</TableCell>
                   <TableCell>{fii.liquidez}</TableCell>
-                  <TableCell>{fii.qtd_imoveis}</TableCell>
-                  <TableCell>{fii.vacancia_media}%</TableCell>
-                  <TableCell>R$ {fii.cotacao.toFixed(2)}</TableCell>
-                </TableRow>
+                  <TableCell>{fii.segmento}</TableCell>
+                </StyledTableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
+              <StyledTableRow>
+                <TableCell colSpan={4} align="center">
                   Nenhum FII encontrado.
                 </TableCell>
-              </TableRow>
+              </StyledTableRow>
             )}
           </TableBody>
         </Table>
-      </TableContainer>
-
-      {/* Gráfico */}
-      <Box sx={{ marginTop: "2rem", height: 300 }}>
-        <Typography variant="h5" gutterBottom>
-          Gráfico de Liquidez
-        </Typography>
-        <ResponsiveContainer>
-          <BarChart data={filteredFiis}>
-            <XAxis dataKey="nome" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="liquidez" fill="#8884d8" />
-          </BarChart>
-        </ResponsiveContainer>
-      </Box>
-    </Box>
+      </StyledTableContainer>
+    </RootContainer>
   );
 };
 
-export default CompanyFilter;
+export default NetflixStyledApp;

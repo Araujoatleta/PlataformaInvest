@@ -1,46 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
+import Navbar from "./components/Navbar";  // Navegação no topo (novo menu)
 import Dashboard from "./components/Dashboard";
 import CompanyFilter from "./components/CompanyFilter";
 import InvestmentCalculator from "./components/InvestmentCalculator";
 import AddFii from "./components/AddFii";
 import Login from "./components/Login";
 import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
 
-  // Verificar se o token existe e manter a autenticação
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsAuthenticated(true);
-      // Não redirecionar diretamente para o Dashboard, pois já estamos na página
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  // Função para login, setando o estado de autenticação
+  // Função de login que define a autenticação e redireciona o usuário
   const handleLogin = () => {
     setIsAuthenticated(true);
-    localStorage.setItem("token", "your_token_value"); // Simulando token no localStorage
-    navigate("/dashboard"); // Redireciona para a Dashboard após login
+    localStorage.setItem("token", "your_token_value"); // Armazenando um token fictício
+    navigate("/dashboard"); // Redireciona imediatamente após login
   };
 
-  // Função de logout
+  // Função de logout que remove o token e redireciona para login
   const handleLogout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem("token"); // Removendo o token do localStorage
-    navigate("/login");
+    localStorage.removeItem("token"); // Remove o token do localStorage
+    navigate("/login"); // Redireciona para a página de login após o logout
   };
 
   return (
     <>
-      {/* Exibe o Sidebar somente se o usuário estiver autenticado */}
-      {isAuthenticated && <Sidebar onLogout={handleLogout} />}
+      {/* Se o usuário estiver autenticado, exibe o Navbar (menu superior) */}
+      {isAuthenticated && <Navbar onLogout={handleLogout} />}
 
       <Routes>
         <Route

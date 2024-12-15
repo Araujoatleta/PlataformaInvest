@@ -1,110 +1,148 @@
-import React, { useState } from "react";   
-import { TextField, Button, Card, CardContent, Typography, Box } from "@mui/material";   
-import { styled } from "@mui/system";   
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";   
-import { toast } from "react-toastify";   
-import { useNavigate } from "react-router-dom";  
-import 'react-toastify/dist/ReactToastify.css';   
-import './Login.css';   
- 
-const StyledCard = styled(Card)(({ theme }) => ({   
-  maxWidth: 400,   
-  margin: "auto",   
-  padding: theme.spacing(2),   
-  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.3)",   
-  borderRadius: "12px",   
-}));  
- 
-const Login = ({ onLogin }) => {   
-  const [username, setUsername] = useState("");   
-  const [password, setPassword] = useState("");   
-  const navigate = useNavigate(); // Hook de navegação  
- 
-  const handleLogin = async (e) => {   
-    e.preventDefault(); 
- 
-    const response = await fetch("http://localhost:5000/api/login", {   
-      method: "POST",   
-      headers: { "Content-Type": "application/json" },   
-      body: JSON.stringify({ username, password }),   
-    });  
- 
-    const data = await response.json();  
- 
-    if (response.ok) {  
-      // Exibir animação de sucesso ao logar  
-      toast.success('Login realizado com sucesso!', {  
-        position: "top-center",  
-        autoClose: 3000,  
-        hideProgressBar: true,  
-        closeOnClick: true,  
-        draggable: true,  
-        progress: undefined,  
-      }); 
- 
-      localStorage.setItem("token", data.token); 
- 
-      // Iniciar a animação de zoom espiral  
-      onLogin();  
- 
-      // Redirecionar para o dashboard após login  
-      navigate('/dashboard');  
-    } else {  
-      // Exibir mensagem de erro se as credenciais forem incorretas  
-      toast.error("Jogador Caro, coloque a senha ou Email corretos!", {  
-        position: "top-center",  
-        autoClose: 3000,  
-        hideProgressBar: true,  
-        closeOnClick: true,  
-        draggable: true,  
-        progress: undefined,  
-      });  
-    }  
-  };  
- 
-  return (  
-    <div className="login-background">  
-      <StyledCard>  
-        <CardContent>  
-          <Box display="flex" justifyContent="center" mb={2}>  
-            <LockOutlinedIcon fontSize="large" color="primary" />  
-          </Box>  
- 
-          <Typography variant="h5" align="center" gutterBottom>  
-            Bem-vindo  
-          </Typography>  
-          <form onSubmit={handleLogin}>  
-            <Box mb={2}>  
-              <TextField  
-                fullWidth  
-                label="Username"  
-                variant="outlined"  
-                value={username}  
-                onChange={(e) => setUsername(e.target.value)}  
-                required  
-              />  
-            </Box>  
-            <Box mb={2}>  
-              <TextField  
-                fullWidth  
-                label="Password"  
-                type="password"  
-                variant="outlined"  
-                value={password}  
-                onChange={(e) => setPassword(e.target.value)}  
-                required  
-              />  
-            </Box>  
-            <Box display="flex" justifyContent="center" mt={2}>  
-              <Button variant="contained" color="primary" size="large" type="submit" fullWidth>  
-                Entrar  
-              </Button>  
-            </Box>  
-          </form>  
-        </CardContent>  
-      </StyledCard>  
-    </div>  
-  );  
-};  
- 
+import React, { useState } from "react";
+import {
+  TextField,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { styled } from "@mui/system";
+
+// Estilos
+const BackgroundContainer = styled(Box)({
+  minHeight: "100vh",
+  background: "linear-gradient(to bottom, #141414, #0D0D0D)", // Fundo sólido degradê Netflix
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "1rem",
+});
+
+const StyledCard = styled(Card)({
+  padding: "3rem 2.5rem",
+  borderRadius: "12px",
+  backgroundColor: "#1F1F1F", // Fundo mais escuro
+  color: "#FFFFFF",
+  boxShadow: "0px 10px 25px rgba(0, 0, 0, 0.7)",
+  maxWidth: "450px",
+  width: "100%",
+  textAlign: "center",
+});
+
+const StyledButton = styled(Button)({
+  backgroundColor: "#E50914", // Vermelho Netflix
+  color: "#FFFFFF",
+  fontWeight: "bold",
+  padding: "1rem",
+  fontSize: "1.1rem",
+  borderRadius: "8px",
+  "&:hover": {
+    backgroundColor: "#B20710", // Vermelho mais escuro no hover
+    transform: "scale(1.05)",
+    transition: "transform 0.3s ease",
+  },
+});
+
+const StyledTextField = styled(TextField)({
+  marginBottom: "1.5rem",
+  "& .MuiOutlinedInput-root": {
+    "& fieldset": {
+      borderColor: "#444", // Borda padrão
+    },
+    "&:hover fieldset": {
+      borderColor: "#E50914", // Borda no hover
+    },
+    "&.Mui-focused fieldset": {
+      borderColor: "#E50914", // Borda no foco
+    },
+    borderRadius: "8px",
+    backgroundColor: "#333", // Fundo do campo input
+  },
+  "& .MuiInputLabel-root": {
+    color: "#AAA",
+    "&.Mui-focused": {
+      color: "#E50914", // Cor do label no foco
+    },
+  },
+  input: {
+    color: "#FFFFFF",
+    fontSize: "1.1rem",
+    padding: "1rem",
+  },
+});
+
+const Title = styled(Typography)({
+  color: "#E50914",
+  fontWeight: "bold",
+  fontSize: "2.5rem",
+  marginBottom: "1.5rem",
+  letterSpacing: "1px",
+});
+
+const Subtitle = styled(Typography)({
+  color: "#AAAAAA",
+  marginBottom: "2rem",
+  fontSize: "1rem",
+});
+
+const Login = ({ onLogin }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+
+    if (username === "admin" && password === "1234") {
+      toast.success("Login realizado com sucesso!");
+      localStorage.setItem("token", "your_token_value");
+      onLogin();
+      navigate("/dashboard");
+    } else {
+      toast.error("Credenciais inválidas!");
+    }
+  };
+
+  return (
+    <BackgroundContainer>
+      <StyledCard>
+        <CardContent>
+          <Title>Login</Title>
+          <Subtitle>Entre com suas credenciais para acessar</Subtitle>
+          <form onSubmit={handleLogin}>
+            <StyledTextField
+              fullWidth
+              label="Username"
+              variant="outlined"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <StyledTextField
+              fullWidth
+              label="Password"
+              type="password"
+              variant="outlined"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <StyledButton
+              fullWidth
+              variant="contained"
+              type="submit"
+            >
+              Entrar
+            </StyledButton>
+          </form>
+        </CardContent>
+      </StyledCard>
+    </BackgroundContainer>
+  );
+};
+
 export default Login;
