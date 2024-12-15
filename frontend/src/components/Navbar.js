@@ -1,31 +1,21 @@
 import React from "react";
-import { AppBar, Toolbar, Button, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
+import "../styles/global.css";
 
 const Navbar = ({ onLogout }) => {
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#333" }}>
-      <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Invest
-        </Typography>
-        <Button color="inherit" component={Link} to="/dashboard">
-          Dashboard
-        </Button>
-        <Button color="inherit" component={Link} to="/company-filter">
-          Filtros FIIs
-        </Button>
-        <Button color="inherit" component={Link} to="/investment-calculator">
-          Calculadora
-        </Button>
-        <Button color="inherit" component={Link} to="/add-fii">
-          Adicionar FII
-        </Button>
-        <Button color="inherit" onClick={onLogout}>
+    <div className="navbar">
+      <h1>FIIs</h1>
+      <div>
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/company-filter">Filtros</Link>
+        <Link to="/investment-calculator">Calculadora</Link>
+        <Link to="/add-fii">Adicionar FII</Link>
+        <button className="btn-primary" onClick={onLogout} style={{ marginLeft: "1rem" }}>
           Sair
-        </Button>
-      </Toolbar>
-    </AppBar>
+        </button>
+      </div>
+    </div>
   );
 };
 
