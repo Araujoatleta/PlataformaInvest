@@ -37,10 +37,10 @@ const Title = styled(Typography)({
 
 const FiltersContainer = styled(Box)({
   display: "flex",
-  justifyContent: "space-around",
+  justifyContent: "center",
   gap: "1rem",
   flexWrap: "wrap",
-  marginBottom: "1rem",
+  marginBottom: "1.5rem",
   padding: "1rem",
   backgroundColor: "#1F1F1F",
   borderRadius: "8px",
@@ -94,7 +94,13 @@ const StyledTableRow = styled(TableRow)({
 const CompanyFilter = () => {
   const [fiis, setFiis] = useState([]); // Lista completa dos FIIs
   const [filteredFiis, setFilteredFiis] = useState([]); // Resultados filtrados
-  const [filters, setFilters] = useState({ nome: "" });
+  const [filters, setFilters] = useState({
+    nome: "",
+    precoMin: "",
+    precoMax: "",
+    marketCapMin: "",
+    dividendRateMin: "",
+  });
 
   // Carregar todos os FIIs ao iniciar
   useEffect(() => {
@@ -111,21 +117,40 @@ const CompanyFilter = () => {
     }
   };
 
-  // Buscar no backend (rota /api/fiis) e aplicar o filtro
-  const handleFetchAndFilter = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/api/fiis");
-      const allFiis = response.data;
+  // Função para aplicar os filtros
+  const applyFilters = () => {
+    let filtered = fiis;
 
-      // Aplica filtro baseado no nome
-      const filtered = allFiis.filter((fii) =>
+    // Filtra pelo nome
+    if (filters.nome) {
+      filtered = filtered.filter((fii) =>
         fii.nome.toLowerCase().includes(filters.nome.toLowerCase())
       );
-
-      setFilteredFiis(filtered); // Atualiza a tabela com os dados filtrados
-    } catch (error) {
-      console.error("Erro ao buscar FIIs:", error.message);
     }
+
+    // Filtra pelo preço mínimo e máximo
+    if (filters.precoMin) {
+      filtered = filtered.filter((fii) => fii.cotacao >= parseFloat(filters.precoMin));
+    }
+    if (filters.precoMax) {
+      filtered = filtered.filter((fii) => fii.cotacao <= parseFloat(filters.precoMax));
+    }
+
+    // Filtra pelo Market Cap mínimo
+    if (filters.marketCapMin) {
+      filtered = filtered.filter(
+        (fii) => fii.marketCap >= parseFloat(filters.marketCapMin)
+      );
+    }
+
+    // Filtra pelo Dividend Rate mínimo
+    if (filters.dividendRateMin) {
+      filtered = filtered.filter(
+        (fii) => fii.dividendRate >= parseFloat(filters.dividendRateMin)
+      );
+    }
+
+    setFilteredFiis(filtered); // Atualiza a tabela com os resultados filtrados
   };
 
   const handleFilterChange = (e) => {
@@ -141,12 +166,43 @@ const CompanyFilter = () => {
       <FiltersContainer>
         <FilterField
           label="Nome do FII"
-          name="nome"
+          name="nome"variant="outlined"
+          size="small"
+          onChange={handleFilterChange}
+        />
+        <FilterField
+          label="Preço Mínimo"
+          name="precoMin"
+          type="number"
           variant="outlined"
           size="small"
           onChange={handleFilterChange}
         />
-        <StyledButton onClick={handleFetchAndFilter}>Buscar</StyledButton>
+        <FilterField
+          label="Preço Máximo"
+          name="precoMax"
+          type="number"
+          variant="outlined"
+          size="small"
+          onChange={handleFilterChange}
+        />
+        <FilterField
+          label="Market Cap Mínimo"
+          name="marketCapMin"
+          type="number"
+          variant="outlined"
+          size="small"
+          onChange={handleFilterChange}
+        />
+        <FilterField
+          label="Dividend Rate Mínimo"
+          name="dividendRateMin"
+          type="number"
+          variant="outlined"
+          size="small"
+          onChange={handleFilterChange}
+        />
+        <StyledButton onClick={applyFilters}>Buscar</StyledButton>
       </FiltersContainer>
 
       {/* Tabela */}
@@ -156,7 +212,8 @@ const CompanyFilter = () => {
             <TableRow>
               <StyledTableCell>Nome</StyledTableCell>
               <StyledTableCell align="right">Cotação</StyledTableCell>
-              <StyledTableCell align="right">Dividend Rate</StyledTableCell><StyledTableCell align="right">Market Cap</StyledTableCell>
+              <StyledTableCell align="right">Dividend Rate</StyledTableCell>
+              <StyledTableCell align="right">Market Cap</StyledTableCell>
               <StyledTableCell align="right">Volume Médio</StyledTableCell>
             </TableRow>
           </TableHead>
