@@ -4,21 +4,21 @@ const sqlite3 = require('sqlite3').verbose();
 const yahooFinance = require('yahoo-finance2').default;
 
 const app = express();
+const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
 
-// Configuração do banco de dados SQLite com timeout
+// Configuração do banco de dados SQLite
 const db = new sqlite3.Database('./fiis.db', sqlite3.OPEN_READWRITE, (err) => {
-  if (err) {
-    console.error('Erro ao conectar ao banco de dados:', err.message);
-  } else {
+  if (err) console.error('Erro ao conectar ao banco de dados:', err.message);
+  else {
     console.log('Conectado ao banco de dados SQLite.');
-    db.run("PRAGMA busy_timeout = 10000"); // Timeout de 10 segundos
+    db.run("PRAGMA busy_timeout = 10000");
   }
 });
 
-// Lista dos FIIs da B3
+// Lista dos FIIs da B3 (adicione outros conforme necessário)
 const fiiCodes = [
   'AAZQ11.SA', 'ABCP11.SA', 'AEFI11.SA', 'AFCR11.SA', 'AFHI11.SA',
   'AFOF11.SA', 'AGCX11.SA', 'AGRX11.SA', 'AIEC11.SA', 'AJFI11.SA',
@@ -121,36 +121,25 @@ const fiiCodes = [
   'XPSF11.SA', 'XTED11.SA', 'YCHY11.SA', 'YUFI11.SA','ZAGH11.SA', 
   'ZAVC11.SA', 'ZAVI11.SA', 'ZIFI11.SA'
 ];
-// Criação da tabela com os novos campos
-db.run(`
-  CREATE TABLE IF NOT EXISTS fiis (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT,
-    cotacao REAL,
-    dividendRate REAL,
-    sharesOutstanding INTEGER,
-    marketCap REAL,
-    avgVolume10d INTEGER
-  )
-`);
 
-// Função para buscar dados de um FII
+// Função para buscar dados de cada FII
 async function fetchFiiData(symbol) {
   try {
     const data = await yahooFinance.quote(symbol);
 
     if (!data || !data.regularMarketPrice) {
-      console.warn(`Dados incompletos ou ausentes para ${symbol}`);
+      console.warn(`Dados ausentes para ${symbol}.`);
       return null;
     }
 
     return {
-      nome: symbol.replace('.SA', ''), // Exibindo o ticker (MXRF11, VISC11, etc)
+      nome: symbol.replace('.SA', ''), // Remove o sufixo '.SA'
       cotacao: data.regularMarketPrice || 0,
       dividendRate: data.trailingAnnualDividendRate || 0,
-      sharesOutstanding: data.sharesOutstanding || 0,
+      dividendYield: ((data.trailingAnnualDividendRate || 0) / data.regularMarketPrice * 100).toFixed(2), // DY em %
       marketCap: data.marketCap || 0,
-      avgVolume10d: data.averageDailyVolume10Day || 0
+      pvp: data.bookValue ? (data.regularMarketPrice / data.bookValue).toFixed(2) : null, // P/VP calculado
+      liquidez: data.averageDailyVolume10Day || 0
     };
   } catch (error) {
     console.error(`Erro ao buscar dados do FII ${symbol}:`, error.message);
@@ -158,79 +147,115 @@ async function fetchFiiData(symbol) {
   }
 }
 
-// Rota: Buscar e atualizar todos os FIIs no banco de dados
+// Rota para buscar e atualizar FIIs no banco
 app.get('/api/fiis/fetch', async (req, res) => {
-  console.log('Iniciando atualização dos FIIs...');
-
-  db.serialize(async () => {
-    try {
-      // Iniciar transação
-      db.run("BEGIN TRANSACTION");
-
-      // Limpar a tabela existente
-      await new Promise((resolve, reject) => {
-        db.run(`DELETE FROM fiis`, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
+  try {
+    db.serialize(async () => {
+      db.run("DELETE FROM fiis", (err) => {
+        if (err) console.error('Erro ao limpar a tabela de FIIs:', err.message);
       });
 
-      // Buscar e inserir os dados de cada FII
+      console.log('Atualizando dados dos FIIs...');
       for (const fiiCode of fiiCodes) {
         const fiiData = await fetchFiiData(fiiCode);
-
         if (fiiData) {
           const query = `
-            INSERT INTO fiis (nome, cotacao, dividendRate, sharesOutstanding, marketCap, avgVolume10d)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO fiis (nome, cotacao, dividendRate, dividendYield, marketCap, pvp, liquidez, favorito)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           `;
-
-          await new Promise((resolve, reject) => {
-            db.run(
-              query,
-              [
-                fiiData.nome,
-                fiiData.cotacao,
-                fiiData.dividendRate,
-                fiiData.sharesOutstanding,
-                fiiData.marketCap,
-                fiiData.avgVolume10d
-              ],
-              (err) => {
-                if (err) reject(err);
-                else resolve();
-              }
-            );
+          db.run(query, [
+            fiiData.nome,
+            fiiData.cotacao,
+            fiiData.dividendRate,
+            fiiData.dividendYield,
+            fiiData.marketCap,
+            fiiData.pvp,
+            fiiData.liquidez,
+            false // Inicialmente, o FII não está marcado como favorito
+          ], (err) => {
+            if (err) console.error(`Erro ao inserir ${fiiData.nome}:`, err.message);
+            else console.log(`FII ${fiiData.nome} atualizado com sucesso.`);
           });
-          console.log(`FII ${fiiData.nome} atualizado com sucesso.`);
         }
       }
-
-      // Finalizar transação
-      db.run("COMMIT");
-      console.log('Atualização dos FIIs concluída.');
+      console.log('Atualização concluída.');
       res.status(200).json({ message: 'FIIs atualizados com sucesso!' });
-    } catch (error) {
-      console.error('Erro ao atualizar os FIIs:', error.message);
-      db.run("ROLLBACK");
-      res.status(500).json({ message: 'Erro ao buscar e atualizar os FIIs.' });
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Erro ao buscar e atualizar FIIs:', error.message);
+    res.status(500).json({ message: 'Erro ao buscar e atualizar FIIs.' });
+  }
 });
 
-// Rota: Listar todos os FIIs do banco de dados
+// Rota para listar FIIs com filtros opcionais
 app.get('/api/fiis', (req, res) => {
-  db.all(`SELECT * FROM fiis`, [], (err, rows) => {
+  const { nome, minDY, maxPVP } = req.query;
+
+  let query = 'SELECT * FROM fiis WHERE 1=1'; // Base query
+
+  const params = [];
+
+  // Verificar se os filtros foram passados e adicionar os parâmetros na query
+  if (nome) {
+    query += ' AND nome LIKE ?';
+    params.push(`%${nome}%`);
+  }
+
+  if (minDY) {
+    query += ' AND dividendYield >= ?';
+    params.push(minDY);
+  }
+
+  if (maxPVP) {
+    query += ' AND pvp <= ?';
+    params.push(maxPVP);
+  }
+
+  // Executar a query com parâmetros
+  db.all(query, params, (err, rows) => {
     if (err) {
       console.error('Erro ao listar FIIs:', err.message);
-      return res.status(500).json({ message: 'Erro ao buscar os FIIs.' });
+      return res.status(500).json({ message: 'Erro ao buscar os FIIs' });
     }
     res.status(200).json(rows);
   });
 });
 
-// Iniciar o servidor
-const PORT = 5000;
+// Rota para listar os FIIs favoritos
+// Rota para adicionar ou remover favoritos
+// Rota para listar os FIIs favoritos
+app.get('/api/fiis/favoritos', (req, res) => {
+  const query = `SELECT * FROM fiis WHERE favorito = 1`; // Busca todos os FIIs com favorito = 1
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Erro ao listar FIIs favoritos:', err.message);
+      return res.status(500).json({ message: 'Erro ao buscar os FIIs favoritos.' });
+    }
+    res.status(200).json(rows); // Retorna os FIIs favoritos
+  });
+});
+
+// Rota para marcar ou desmarcar um FII como favorito
+app.post('/api/fiis/favorito', (req, res) => {
+  const { id, favorito } = req.body; // 'id' do FII e o status do 'favorito'
+
+  const query = `
+    UPDATE fiis
+    SET favorito = ?
+    WHERE id = ?
+  `;
+
+  db.run(query, [favorito, id], function (err) {
+    if (err) {
+      console.error('Erro ao atualizar o favorito:', err.message);
+      return res.status(500).json({ message: 'Erro ao atualizar o favorito' });
+    }
+    res.status(200).json({ message: 'FII atualizado com sucesso' });
+  });
+});
+
+// Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });

@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar"; // Menu superior
 import Dashboard from "./components/Dashboard";
+import Reports from './components/Reports';
 import CompanyFilter from "./components/CompanyFilter";
 import InvestmentCalculator from "./components/InvestmentCalculator";
 import AddFii from "./components/AddFii";
 import Login from "./components/Login";
+import Favorites from "./components/Favoritos";  // Importando a página de favoritos
+import FiisCard from "./components/FiiCard";   // Importando o componente FiisCard
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -77,6 +80,26 @@ function App() {
         <Route
           path="/add-fii"
           element={isAuthenticated ? <AddFii /> : <Login onLogin={handleLogin} />}
+        />
+        <Route
+          path="/reports"
+          element={
+            isAuthenticated ? <Reports /> : <Login onLogin={handleLogin} />
+          }
+        />
+        {/* Rota para FIIs Favoritos */}
+        <Route
+          path="Favoritos"
+          element={
+            isAuthenticated ? <Favorites /> : <Login onLogin={handleLogin} />
+          }
+        />
+        {/* Rota para o componente FiisCard */}
+        <Route
+          path="/fiis-card"
+          element={
+            isAuthenticated ? <FiisCard /> : <Login onLogin={handleLogin} />
+          }
         />
       </Routes>
 

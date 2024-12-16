@@ -1,236 +1,102 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import {
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Box,
-  Typography,
-  Button,
-} from "@mui/material";
-import { styled } from "@mui/system";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Paper, TextField, Button, Box, Typography } from '@mui/material';
 
-// Estilização global
-const RootContainer = styled(Box)({
-  minHeight: "100vh",
-  backgroundColor: "#141414",
-  color: "#fff",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  padding: "2rem",
-  paddingTop: "5rem", // Adiciona espaço abaixo do Navbar
-});
-
-const Title = styled(Typography)({
-  fontSize: "2.5rem",
-  fontWeight: "bold",
-  color: "#E50914",
-  marginBottom: "1.5rem",
-  textAlign: "center",
-});
-
-const FiltersContainer = styled(Box)({
-  display: "flex",
-  justifyContent: "center",
-  gap: "1rem",
-  flexWrap: "wrap",
-  marginBottom: "1.5rem",
-  padding: "1rem",
-  backgroundColor: "#1F1F1F",
-  borderRadius: "8px",
-  width: "100%",
-  maxWidth: "1200px",
-});
-
-const FilterField = styled(TextField)({
-  backgroundColor: "#333",
-  borderRadius: "4px",
-  "& .MuiOutlinedInput-root": {
-    "& fieldset": { borderColor: "#555" },
-    "&:hover fieldset": { borderColor: "#E50914" },
-    "&.Mui-focused fieldset": { borderColor: "#E50914" },
-  },
-  input: { color: "#fff" },
-  "& label": { color: "#aaa" },
-  "& .Mui-focused": { color: "#fff" },
-});
-
-const StyledButton = styled(Button)({
-  backgroundColor: "#E50914",
-  color: "#fff",
-  "&:hover": { backgroundColor: "#B20710" },
-  fontSize: "1rem",
-  padding: "0.5rem 2rem",
-  borderRadius: "4px",
-});
-
-// Tabela com rolagem interna
-const ScrollableTableContainer = styled(TableContainer)({
-  backgroundColor: "#1F1F1F",
-  borderRadius: "8px",
-  maxHeight: "400px",
-  overflowY: "auto",
-  width: "100%",
-  maxWidth: "1200px",
-});
-
-const StyledTableCell = styled(TableCell)({
-  color: "#fff",
-  fontWeight: "bold",
-  backgroundColor: "#333",
-});
-
-const StyledTableRow = styled(TableRow)({
-  "&:nth-of-type(odd)": { backgroundColor: "#2A2A2A" },
-  "&:hover": { backgroundColor: "#444" },
-});
-
+// Componente de filtro de FIIs com sistema de favoritos
 const CompanyFilter = () => {
-  const [fiis, setFiis] = useState([]); // Lista completa dos FIIs
-  const [filteredFiis, setFilteredFiis] = useState([]); // Resultados filtrados
-  const [filters, setFilters] = useState({
-    nome: "",
-    precoMin: "",
-    precoMax: "",
-    marketCapMin: "",
-    dividendRateMin: "",
-  });
+  const [fiis, setFiis] = useState([]);
+  const [filters, setFilters] = useState({ nome: '', minDY: '', maxPVP: '' });
 
-  // Carregar todos os FIIs ao iniciar
-  useEffect(() => {
-    fetchAllFiis();
-  }, []);
+  // Função para buscar FIIs
+  const fetchFiis = async () => {
+    const response = await axios.get('http://localhost:5000/api/fiis', { params: filters });
+    setFiis(response.data);
+  };
 
-  const fetchAllFiis = async () => {
+  // Função para marcar/desmarcar favoritos
+  const handleFavoriteToggle = async (id, favorito) => {
     try {
-      const response = await axios.get("http://localhost:5000/api/fiis");
-      setFiis(response.data);
-      setFilteredFiis(response.data);
+      await axios.post('http://localhost:5000/api/fiis/favorito', {
+        id: id,
+        favorito: !favorito,
+      });
+      // Atualiza o estado para refletir a mudança
+      setFiis(fiis.map(fii => fii.id === id ? { ...fii, favorito: !favorito } : fii));
     } catch (error) {
-      console.error("Erro ao buscar FIIs:", error.message);
+      console.error('Erro ao atualizar favorito', error);
     }
   };
 
-  // Função para aplicar os filtros
-  const applyFilters = () => {
-    let filtered = fiis;
-
-    // Filtra pelo nome
-    if (filters.nome) {
-      filtered = filtered.filter((fii) =>
-        fii.nome.toLowerCase().includes(filters.nome.toLowerCase())
-      );
-    }
-
-    // Filtra pelo preço mínimo e máximo
-    if (filters.precoMin) {
-      filtered = filtered.filter((fii) => fii.cotacao >= parseFloat(filters.precoMin));
-    }
-    if (filters.precoMax) {
-      filtered = filtered.filter((fii) => fii.cotacao <= parseFloat(filters.precoMax));
-    }
-
-    // Filtra pelo Market Cap mínimo
-    if (filters.marketCapMin) {
-      filtered = filtered.filter(
-        (fii) => fii.marketCap >= parseFloat(filters.marketCapMin)
-      );
-    }
-
-    // Filtra pelo Dividend Rate mínimo
-    if (filters.dividendRateMin) {
-      filtered = filtered.filter(
-        (fii) => fii.dividendRate >= parseFloat(filters.dividendRateMin)
-      );
-    }
-
-    setFilteredFiis(filtered); // Atualiza a tabela com os resultados filtrados
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters({ ...filters, [name]: value });
-  };
+  useEffect(() => {
+    fetchFiis();
+  }, [filters]);
 
   return (
-    <RootContainer>
-      <Title>Filtros de FIIs</Title>
+    <Box sx={{ padding: 3, backgroundColor: '#141414', color: '#fff' }}>
+      <Typography variant="h4" sx={{ color: '#E50914', marginBottom: 2 }}>
+        Filtros de FIIs
+      </Typography>
 
-      {/* Filtros */}
-      <FiltersContainer>
-        <FilterField
+      <Box sx={{ display: 'flex', gap: 2, marginBottom: 2 }}>
+        <TextField
           label="Nome do FII"
-          name="nome"variant="outlined"
-          size="small"
-          onChange={handleFilterChange}
-        />
-        <FilterField
-          label="Preço Mínimo"
-          name="precoMin"
-          type="number"
           variant="outlined"
-          size="small"
-          onChange={handleFilterChange}
+          fullWidth
+          onChange={(e) => setFilters({ ...filters, nome: e.target.value })}
         />
-        <FilterField
-          label="Preço Máximo"
-          name="precoMax"
-          type="number"
+        <TextField
+          label="DY Mínimo (%)"
           variant="outlined"
-          size="small"
-          onChange={handleFilterChange}
+          fullWidth
+          onChange={(e) => setFilters({ ...filters, minDY: e.target.value })}
         />
-        <FilterField
-          label="Market Cap Mínimo"
-          name="marketCapMin"
-          type="number"
+        <TextField
+          label="P/VP Máximo"
           variant="outlined"
-          size="small"
-          onChange={handleFilterChange}
+          fullWidth
+          onChange={(e) => setFilters({ ...filters, maxPVP: e.target.value })}
         />
-        <FilterField
-          label="Dividend Rate Mínimo"
-          name="dividendRateMin"
-          type="number"
-          variant="outlined"
-          size="small"
-          onChange={handleFilterChange}
-        />
-        <StyledButton onClick={applyFilters}>Buscar</StyledButton>
-      </FiltersContainer>
+        <Button variant="contained" color="primary" onClick={fetchFiis}>
+          Buscar
+        </Button>
+      </Box>
 
-      {/* Tabela */}
-      <ScrollableTableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ maxHeight: '500px', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <StyledTableCell>Nome</StyledTableCell>
-              <StyledTableCell align="right">Cotação</StyledTableCell>
-              <StyledTableCell align="right">Dividend Rate</StyledTableCell>
-              <StyledTableCell align="right">Market Cap</StyledTableCell>
-              <StyledTableCell align="right">Volume Médio</StyledTableCell>
+              <TableCell>Nome</TableCell>
+              <TableCell>Cotação</TableCell>
+              <TableCell>DY (%)</TableCell>
+              <TableCell>P/VP</TableCell>
+              <TableCell>Market Cap</TableCell>
+              <TableCell>Liquidez</TableCell>
+              <TableCell>Favorito</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredFiis.map((fii, index) => (
-              <StyledTableRow key={index}>
+            {fiis.map((fii) => (
+              <TableRow key={fii.id}>
                 <TableCell>{fii.nome}</TableCell>
-                <TableCell align="right">R$ {fii.cotacao}</TableCell>
-                <TableCell align="right">{fii.dividendRate}</TableCell>
-                <TableCell align="right">{fii.marketCap}</TableCell>
-                <TableCell align="right">{fii.avgVolume10d}</TableCell>
-              </StyledTableRow>
+                <TableCell>R$ {fii.cotacao}</TableCell>
+                <TableCell>{fii.dividendYield}%</TableCell>
+                <TableCell>{fii.pvp}</TableCell>
+                <TableCell>R$ {fii.marketCap}</TableCell>
+                <TableCell>{fii.liquidez}</TableCell>
+                <TableCell>
+                  <Button
+                    onClick={() => handleFavoriteToggle(fii.id, fii.favorito)}
+                    color={fii.favorito ? 'secondary' : 'primary'}
+                  >
+                    {fii.favorito ? '★ Favorito' : '☆ Marcar como Favorito'}
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>
-      </ScrollableTableContainer>
-    </RootContainer>
+      </TableContainer>
+    </Box>
   );
 };
 
